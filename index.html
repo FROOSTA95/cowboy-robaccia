@@ -134,7 +134,7 @@ function openForm(a){
   <div class="row"><div><label>Genere</label><input id="f-genre" value="${esc(a.genre)}"></div><div><label>Anno</label><input id="f-year" type="number" inputmode="numeric" value="${esc(a.year)}"></div></div>
   <label>Voto: <span id="f-sv"></span> / 10</label><input id="f-score" type="range" min="0" max="10" step="0.1" value="${a.score??7}">
   <label>Recensione (riga vuota = nuovo paragrafo)</label><textarea id="f-review">${esc(a.review)}</textarea>
-  <label>Copertina</label><input id="f-file" type="file" accept="image/*">
+  <label>Copertina (diventa un mosaico di quadrati)</label><input id="f-file" type="file" accept="image/*">
   <p class="hint" id="f-ch">${a.cover?'Copertina caricata. Scegli un’altra immagine per sostituirla.':'Senza immagine verrà usata una copertina colorata.'}</p>
   ${a.cover?'<label><input type="checkbox" id="f-rm" style="width:auto"> Rimuovi la copertina caricata</label>':''}
   <div class="row" id="f-cols"><div><label>Colore 1</label><input id="f-c1" type="color" value="${esc((a.colors||[])[0]||'#3a0ca3')}"></div><div><label>Colore 2</label><input id="f-c2" type="color" value="${esc((a.colors||[])[1]||'#f72585')}"></div></div>
@@ -162,7 +162,20 @@ function openForm(a){
     }catch(e){err.textContent='Errore: '+(e.message||e.code||e);btn.disabled=false;btn.textContent='Salva'}
   };
 }
-function prep(file,ratio){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const W=600,H=Math.round(W/ratio),c=document.createElement('canvas');c.width=W;c.height=H;const s=Math.max(W/img.width,H/img.height),w=img.width*s,h=img.height*s;c.getContext('2d').drawImage(img,(W-w)/2,(H-h)/2,w,h);c.toBlob(b=>b?res(b):rej(new Error('Immagine non valida')),'image/jpeg',.85)};img.onerror=()=>rej(new Error('Immagine non valida'));img.src=URL.createObjectURL(file)})}
+const MOSAIC={dischi:[6,6],libri:[6,9]};/* quadrati per lato: più bassi = quadrati più grandi */
+const PUNCH={sat:1.7,contrast:1.12};/* colori accesi: metti 1 e 1 per i colori naturali */
+function prep(file,ratio){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{
+  const [cols,rows]=ratio===1?MOSAIC.dischi:MOSAIC.libri,S=8,cw=cols*S,ch=rows*S;
+  const t=document.createElement('canvas');t.width=cw;t.height=ch;const tx=t.getContext('2d',{willReadFrequently:true});tx.imageSmoothingQuality='high';
+  const s=Math.max(cw/img.width,ch/img.height),w=img.width*s,h=img.height*s;tx.drawImage(img,(cw-w)/2,(ch-h)/2,w,h);
+  const d=tx.getImageData(0,0,cw,ch).data,cells=[];
+  for(let r=0;r<rows;r++)for(let k=0;k<cols;k++){let R=0,G=0,B=0;for(let y=0;y<S;y++)for(let z=0;z<S;z++){const i=((r*S+y)*cw+k*S+z)*4;R+=d[i];G+=d[i+1];B+=d[i+2]}const n=S*S;cells.push([R/n,G/n,B/n])}
+  const lum=p=>.299*p[0]+.587*p[1]+.114*p[2],cl=v=>Math.max(0,Math.min(255,Math.round(v)));
+  cells.forEach(p=>{const g=lum(p);for(let i=0;i<3;i++)p[i]=g+(p[i]-g)*PUNCH.sat});
+  const m=cells.reduce((a,p)=>a+lum(p),0)/cells.length;
+  const W=600,cell=W/cols,c=document.createElement('canvas');c.width=W;c.height=Math.round(cell*rows);const x=c.getContext('2d');
+  cells.forEach((p,i)=>{const r=Math.floor(i/cols),k=i%cols;x.fillStyle='rgb('+cl(m+(p[0]-m)*PUNCH.contrast)+','+cl(m+(p[1]-m)*PUNCH.contrast)+','+cl(m+(p[2]-m)*PUNCH.contrast)+')';x.fillRect(Math.floor(k*cell),Math.floor(r*cell),Math.ceil(cell)+1,Math.ceil(cell)+1)});
+  c.toBlob(b=>b?res(b):rej(new Error('Immagine non valida')),'image/jpeg',.9)};img.onerror=()=>rej(new Error('Immagine non valida'));img.src=URL.createObjectURL(file)})}
 fab.onclick=()=>openForm();
 
 /* ---------- avvio ---------- */
@@ -178,21 +191,42 @@ function foot(){
   f.innerHTML=canEdit?'<a href="#" id="lo">Esci</a>':'<a href="#" id="li">Area riservata</a>';
   const b=f.firstChild;b.onclick=async e=>{e.preventDefault();if(canEdit)await sb.auth.signOut();else openLogin()};
 }
+function showProblem(msg){fail=msg;try{route()}catch(e){app.textContent=msg}}
+function cfgProblem(){
+  if(typeof SUPABASE_URL==='undefined'||typeof SUPABASE_KEY==='undefined')return 'Il file config.js non è stato trovato o contiene un errore. Controlla che sia nel repository e che le due righe siano scritte come nell’originale, con gli apici.';
+  if(String(SUPABASE_URL).startsWith('INCOLLA')||String(SUPABASE_KEY).startsWith('INCOLLA'))return 'In config.js ci sono ancora le scritte INCOLLA_QUI: sostituiscile con i dati di Supabase.';
+  if(!/^https:\/\//.test(String(SUPABASE_URL).trim()))return 'Il Project URL in config.js deve iniziare con https:// ed essere del tipo https://abcdefgh.supabase.co';
+  if(typeof supabase==='undefined')return 'La libreria di Supabase non si è caricata (connessione assente o bloccata). Ricarica la pagina.';
+  return '';
+}
 function openLogin(){
   sheet.hidden=false;
-  sheet.innerHTML=`<div class="fwrap"><h2>Area riservata</h2><label>Email</label><input id="l-mail" type="email" autocomplete="username"><label>Password</label><input id="l-pass" type="password" autocomplete="current-password"><div class="err" id="l-err"></div><div class="acts"><button class="btn p" id="l-go">Accedi</button><button class="btn" id="l-no">Annulla</button></div></div>`;
+  sheet.innerHTML=`<div class="fwrap"><h2>Area riservata</h2><label>Email</label><input id="l-mail" type="email" autocomplete="username"><label>Password</label><input id="l-pass" type="password" autocomplete="current-password"><div class="err" id="l-err">${esc(sb?'':cfgProblem())}</div><div class="acts"><button class="btn p" id="l-go">Accedi</button><button class="btn" id="l-no">Annulla</button></div></div>`;
   const $=id=>document.getElementById(id);
   $('l-no').onclick=()=>{sheet.hidden=true;sheet.innerHTML=''};
-  $('l-go').onclick=async()=>{const r=await sb.auth.signInWithPassword({email:$('l-mail').value.trim(),password:$('l-pass').value});if(r.error){$('l-err').textContent='Accesso non riuscito: '+r.error.message}else{sheet.hidden=true;sheet.innerHTML=''}};
+  const go=async()=>{
+    const err=$('l-err'),btn=$('l-go');err.textContent='';
+    if(!sb){err.textContent=cfgProblem()||'Non sono riuscito a collegarmi a Supabase. Ricarica la pagina e riprova.';return}
+    btn.disabled=true;btn.textContent='Accedo…';
+    try{
+      const r=await sb.auth.signInWithPassword({email:$('l-mail').value.trim(),password:$('l-pass').value});
+      if(r.error){err.textContent='Accesso non riuscito: '+r.error.message}else{sheet.hidden=true;sheet.innerHTML=''}
+    }catch(e){err.textContent='Errore: '+(e.message||e)}
+    btn.disabled=false;btn.textContent='Accedi';
+  };
+  $('l-go').onclick=go;$('l-pass').onkeydown=e=>{if(e.key==='Enter')go()};
 }
 (async()=>{
   foot();
-  if(SUPABASE_URL.startsWith('INCOLLA')){fail='App non ancora configurata: apri config.js e incolla i dati di Supabase (vedi GUIDA.md).';route();return}
-  sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-  const s=await sb.auth.getSession();canEdit=!!s.data.session;
-  sb.auth.onAuthStateChange((_e,ses)=>{canEdit=!!ses;foot();route()});
-  foot();await load();
-  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+  const pr=cfgProblem();
+  if(pr){showProblem(pr);return}
+  try{
+    sb=supabase.createClient(String(SUPABASE_URL).trim().replace(/\/$/,''),String(SUPABASE_KEY).trim());
+    const s=await sb.auth.getSession();canEdit=!!s.data.session;
+    sb.auth.onAuthStateChange((_e,ses)=>{canEdit=!!ses;foot();route()});
+    foot();await load();
+    if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }catch(e){showProblem('Errore di avvio: '+(e.message||e))}
 })();
 </script>
 </body>
