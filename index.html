@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#e9e3d9">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cowboy Robaccia">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<title>Cowboy Robaccia – App</title>
+<style>
+:root{--bg:#e9e3d9;--fg:#161413;--muted:#6f6a60;--line:#d2cabb;--card:#f3eee6;--accent:#c2410c;--logo:none;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;line-height:1.55}
+header{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);border-bottom:1px solid var(--line);z-index:5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+.bar{max-width:900px;margin:0 auto;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.logo img{height:42px;width:auto;display:block;filter:var(--logo)}
+.tabs{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--card);margin-left:auto}
+.tabs a{padding:8px 16px;text-decoration:none;color:var(--muted);font:600 .88rem "Helvetica Neue",Helvetica,Arial,sans-serif}
+.tabs a.on{background:var(--fg);color:var(--bg)}
+#q{flex:1 1 100%;padding:10px 16px;font:.95rem "Helvetica Neue",Helvetica,Arial,sans-serif;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--fg)}
+main{max-width:900px;margin:0 auto;padding:20px 16px 110px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+@media(min-width:700px){.grid{grid-template-columns:repeat(3,1fr);gap:26px}}
+.item{text-decoration:none;color:inherit;display:block}
+.cover{aspect-ratio:1/1;width:100%;display:block;border-radius:4px;box-shadow:0 12px 14px -8px rgba(0,0,0,.5),0 3px 5px rgba(0,0,0,.2);object-fit:cover}
+.cover.book{aspect-ratio:2/3;border-radius:2px 6px 6px 2px}
+.t{margin:8px 0 0;font-weight:700;line-height:1.3}
+.a{margin:2px 0 0;color:var(--muted);font:.85rem "Helvetica Neue",Helvetica,Arial,sans-serif}
+.msg{text-align:center;color:var(--muted);padding:56px 10px;font:1rem "Helvetica Neue",Helvetica,Arial,sans-serif}
+.sec{margin:30px 0 14px;font:700 .8rem "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:8px}
+.sec:first-child{margin-top:0}
+.back{display:inline-block;margin-bottom:16px;color:var(--accent);text-decoration:none;font:.9rem "Helvetica Neue",Helvetica,Arial,sans-serif}
+.detail{display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:28px;align-items:start}
+@media(max-width:700px){.detail{grid-template-columns:1fr}}
+.detail h1{margin:0;font-size:1.9rem;line-height:1.2}
+.meta{color:var(--muted);font:.9rem "Helvetica Neue",Helvetica,Arial,sans-serif;margin:6px 0 12px}
+.tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:1px 10px;font:.78rem "Helvetica Neue",Helvetica,Arial,sans-serif}
+.score{display:inline-block;background:var(--accent);color:#fff;font:700 1.1rem "Helvetica Neue",Helvetica,Arial,sans-serif;padding:4px 12px;border-radius:6px;margin:12px 0 16px}
+.review p{margin:0 0 1em;font-size:1.05rem}
+.btn{font:600 .95rem "Helvetica Neue",Helvetica,Arial,sans-serif;padding:11px 20px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+.btn.p{background:var(--accent);color:#fff;border-color:transparent}
+.btn.d{color:#c92a2a}
+.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:58px;height:58px;border-radius:50%;border:0;background:var(--accent);color:#fff;font:300 2rem/1 "Helvetica Neue",Helvetica,Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer;z-index:6}
+#sheet{position:fixed;inset:0;background:var(--bg);z-index:20;overflow:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(40px + env(safe-area-inset-bottom,0px))}
+#sheet form,.fwrap{max-width:560px;margin:0 auto}
+.fwrap h2{margin:0 0 16px;font-size:1.4rem}
+.fwrap label{display:block;margin:14px 0 4px;font:600 .8rem "Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--muted)}
+.fwrap input,.fwrap select,.fwrap textarea{width:100%;padding:10px 12px;font:1rem "Helvetica Neue",Helvetica,Arial,sans-serif;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg)}
+.fwrap textarea{min-height:200px;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;line-height:1.5}
+.fwrap input[type=color]{height:44px;padding:3px}
+.row{display:flex;gap:12px}.row>div{flex:1}
+.acts{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.err{color:#c92a2a;font:.9rem "Helvetica Neue",Helvetica,Arial,sans-serif;margin-top:12px}
+.hint{font:.8rem "Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--muted);margin-top:4px}
+.logo{display:flex;align-items:center;gap:10px}.logo img.mark{height:60px;width:auto}@media(max-width:700px){.logo img.mark{height:50px}}
+footer{text-align:center;padding:0 16px 90px;font:.8rem "Helvetica Neue",Helvetica,Arial,sans-serif}footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<header><div class="bar">
+<a class="logo" href="#dischi" aria-label="Cowboy Robaccia"><img class="mark" src="icons/logo.png" alt=""></a>
+<nav class="tabs"><a id="tab-dischi" href="#dischi">Dischi</a><a id="tab-libri" href="#libri">Libri</a></nav>
+<input id="q" type="search" placeholder="Cerca in dischi e libri…" aria-label="Cerca">
+</div></header>
+<main id="app"><p class="msg">Caricamento…</p></main>
+<footer id="foot"></footer>
+<button class="fab" id="fab" aria-label="Aggiungi" hidden>+</button>
+<div id="sheet" hidden></div>
+
+<script>
+const app=document.getElementById('app'),q=document.getElementById('q'),sheet=document.getElementById('sheet'),fab=document.getElementById('fab');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LAB={dischi:{by:'Artista',one:'disco',all:'dischi'},libri:{by:'Autore',one:'libro',all:'libri'}};
+let mode='dischi',items=[],loaded=false,fail='',canEdit=false,col=null,assets=null;
+
+/* ---------- copertine ---------- */
+function cover(a,k){
+  const bk=k==='libri'?' book':'';
+  if(a.cover)return `<img class="cover${bk}" src="${esc(a.cover)}" alt="Copertina di ${esc(a.title)}">`;
+  const [c1,c2]=a.colors||['#444','#999'],g='g'+a.id.replace(/[^a-z0-9]/gi,''),H=k==='libri'?300:200;
+  const deco=k==='dischi'
+   ?'<circle cx="100" cy="100" r="46" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2"/><circle cx="100" cy="100" r="22" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2"/><circle cx="100" cy="100" r="4" fill="#fff" fill-opacity=".6"/>'
+   :'<rect width="14" height="300" fill="#000" fill-opacity=".22"/><rect x="34" y="70" width="130" height="6" fill="#fff" fill-opacity=".6"/><rect x="34" y="86" width="90" height="6" fill="#fff" fill-opacity=".6"/><rect x="34" y="110" width="30" height="2" fill="#fff" fill-opacity=".5"/><rect x="34" y="262" width="70" height="3" fill="#fff" fill-opacity=".5"/>';
+  return `<svg class="cover${bk}" viewBox="0 0 200 ${H}" role="img" aria-label="Copertina di ${esc(a.title)}"><defs><linearGradient id="${g}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${esc(c1)}"/><stop offset="1" stop-color="${esc(c2)}"/></linearGradient></defs><rect width="200" height="${H}" fill="url(#${g})"/>${deco}</svg>`;
+}
+
+/* ---------- viste ---------- */
+function setMode(m){mode=m;for(const k in LAB)document.getElementById('tab-'+k).className=k===m?'on':''}
+const of=k=>items.filter(a=>a.kind===k).sort((x,y)=>(y.created||0)-(x.created||0));
+function grid(k,list){return `<div class="grid">${list.map(a=>`<a class="item" href="#${k==='dischi'?'d':'l'}-${a.id}">${cover(a,k)}<p class="t">${esc(a.title)}</p><p class="a">${esc(a.by)}</p></a>`).join('')}</div>`}
+function list(){
+  if(fail){app.innerHTML=`<p class="msg">${esc(fail)}</p>`;return}
+  if(!loaded){app.innerHTML='<p class="msg">Caricamento…</p>';return}
+  const t=q.value.trim().toLowerCase();
+  if(!t){const l=of(mode);app.innerHTML=l.length?grid(mode,l):`<p class="msg">Ancora nessun ${LAB[mode].one}.${canEdit?'<br>Tocca + per aggiungere la prima recensione.':''}</p>`;return}
+  const parts=['dischi','libri'].map(k=>[k,of(k).filter(a=>[a.title,a.by,a.genre].some(x=>String(x||'').toLowerCase().includes(t)))]).filter(p=>p[1].length);
+  app.innerHTML=parts.length?parts.map(([k,l])=>`<h2 class="sec">${k==='dischi'?'Dischi':'Libri'}</h2>${grid(k,l)}`).join(''):`<p class="msg">Nessun risultato per “${esc(q.value)}”.</p>`;
+}
+function detail(a,k){
+  const sc=Number(a.score||0).toFixed(1).replace('.',',');
+  app.innerHTML=`<a class="back" href="#${k}">← Tutti i ${LAB[k].all}</a><div class="detail"><div>${cover(a,k)}</div><article><h1>${esc(a.title)}</h1><p class="meta">${esc(a.by)}${a.year?' · '+esc(a.year):''}</p>${a.genre?`<span class="tag">${esc(a.genre)}</span><br>`:''}<div class="score">${sc} / 10</div><div class="review">${String(a.review||'').split(/\n+/).filter(Boolean).map(p=>`<p>${esc(p)}</p>`).join('')}</div>${canEdit?'<button class="btn" id="edit">Modifica</button>':''}</article></div>`;
+  window.scrollTo(0,0);
+  if(canEdit)document.getElementById('edit').onclick=()=>openForm(a);
+}
+function route(){
+  const h=location.hash.slice(1),m=h.match(/^([dl])-(.+)$/);
+  fab.hidden=!canEdit;
+  if(m){
+    const k=m[1]==='d'?'dischi':'libri';setMode(k);
+    const a=items.find(x=>x.id===m[2]&&x.kind===k);
+    if(a){detail(a,k);return}
+    if(!loaded){list();return}
+  }else{const k=h==='libri'?'libri':'dischi';if(k!==mode)q.value='';setMode(k)}
+  list();
+}
+q.addEventListener('input',()=>{if(/^[dl]-/.test(location.hash.slice(1)))location.hash=mode;else list()});
+addEventListener('hashchange',route);
+
+/* ---------- modulo aggiungi / modifica ---------- */
+function openForm(a){
+  const ed=!!a;a=a||{kind:mode,colors:['#3a0ca3','#f72585'],score:7};
+  sheet.hidden=false;sheet.scrollTop=0;
+  sheet.innerHTML=`<div class="fwrap"><h2>${ed?'Modifica recensione':'Nuova recensione'}</h2>
+  <label>Tipo</label><select id="f-kind"><option value="dischi">Disco / singolo</option><option value="libri">Libro</option></select>
+  <label id="f-bylab"></label><input id="f-by" value="${esc(a.by)}">
+  <label>Titolo</label><input id="f-title" value="${esc(a.title)}">
+  <div class="row"><div><label>Genere</label><input id="f-genre" value="${esc(a.genre)}"></div><div><label>Anno</label><input id="f-year" type="number" inputmode="numeric" value="${esc(a.year)}"></div></div>
+  <label>Voto: <span id="f-sv"></span> / 10</label><input id="f-score" type="range" min="0" max="10" step="0.1" value="${a.score??7}">
+  <label>Recensione (riga vuota = nuovo paragrafo)</label><textarea id="f-review">${esc(a.review)}</textarea>
+  <label>Copertina (diventa un mosaico di quadrati)</label><input id="f-file" type="file" accept="image/*">
+  <p class="hint" id="f-ch">${a.cover?'Copertina caricata. Scegli un’altra immagine per sostituirla.':'Senza immagine verrà usata una copertina colorata.'}</p>
+  ${a.cover?'<label><input type="checkbox" id="f-rm" style="width:auto"> Rimuovi la copertina caricata</label>':''}
+  <div class="row" id="f-cols"><div><label>Colore 1</label><input id="f-c1" type="color" value="${esc((a.colors||[])[0]||'#3a0ca3')}"></div><div><label>Colore 2</label><input id="f-c2" type="color" value="${esc((a.colors||[])[1]||'#f72585')}"></div></div>
+  <div class="err" id="f-err"></div>
+  <div class="acts"><button class="btn p" id="f-save">Salva</button><button class="btn" id="f-cancel">Annulla</button>${ed?'<button class="btn d" id="f-del">Elimina</button>':''}</div></div>`;
+  const $=id=>document.getElementById(id),kind=$('f-kind');
+  kind.value=a.kind;
+  const sync=()=>{$('f-bylab').textContent=LAB[kind.value].by};sync();kind.onchange=sync;
+  const sv=()=>{$('f-sv').textContent=Number($('f-score').value).toFixed(1).replace('.',',')};sv();$('f-score').oninput=sv;
+  $('f-cancel').onclick=()=>{sheet.hidden=true;sheet.innerHTML=''};
+  if(ed)$('f-del').onclick=async()=>{if(!confirm('Eliminare questa recensione?'))return;try{const r=await sb.from('items').delete().eq('id',a.id);if(r.error)throw r.error;await load();sheet.hidden=true;sheet.innerHTML='';location.hash=a.kind}catch(e){$('f-err').textContent='Errore: '+(e.message||e.code)}};
+  $('f-save').onclick=async()=>{
+    const err=$('f-err'),btn=$('f-save');err.textContent='';
+    const title=$('f-title').value.trim(),by=$('f-by').value.trim();
+    if(!title||!by){err.textContent='Titolo e '+LAB[kind.value].by.toLowerCase()+' sono obbligatori.';return}
+    btn.disabled=true;btn.textContent='Salvo…';
+    try{
+      let cv=a.cover||'';if($('f-rm')&&$('f-rm').checked)cv='';
+      const f=$('f-file').files[0];
+      if(f){const blob=await prep(f,kind.value==='libri'?2/3:1),path=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7)+'.jpg',up=await sb.storage.from('covers').upload(path,blob,{contentType:'image/jpeg'});if(up.error)throw up.error;cv=sb.storage.from('covers').getPublicUrl(path).data.publicUrl}
+      const id=ed?a.id:(title.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'voce')+'-'+Date.now().toString(36);
+      const obj={kind:kind.value,title,by,genre:$('f-genre').value.trim(),year:$('f-year').value.trim(),score:Number($('f-score').value),review:$('f-review').value.trim(),colors:[$('f-c1').value,$('f-c2').value],cover:cv,created:a.created||Date.now()};
+      const r=await sb.from('items').upsert({id,kind:obj.kind,title:obj.title,author:obj.by,genre:obj.genre,year:obj.year,score:obj.score,review:obj.review,colors:obj.colors,cover:obj.cover,created_at:obj.created});if(r.error)throw r.error;await load();
+      sheet.hidden=true;sheet.innerHTML='';location.hash=(obj.kind==='dischi'?'d-':'l-')+id;
+    }catch(e){err.textContent='Errore: '+(e.message||e.code||e);btn.disabled=false;btn.textContent='Salva'}
+  };
+}
+const MOSAIC={dischi:[6,6],libri:[6,9]};/* quadrati per lato: più bassi = quadrati più grandi */
+const PUNCH={sat:1.7,contrast:1.12};/* colori accesi: metti 1 e 1 per i colori naturali */
+function prep(file,ratio){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{
+  const [cols,rows]=ratio===1?MOSAIC.dischi:MOSAIC.libri,S=8,cw=cols*S,ch=rows*S;
+  const t=document.createElement('canvas');t.width=cw;t.height=ch;const tx=t.getContext('2d',{willReadFrequently:true});tx.imageSmoothingQuality='high';
+  const s=Math.max(cw/img.width,ch/img.height),w=img.width*s,h=img.height*s;tx.drawImage(img,(cw-w)/2,(ch-h)/2,w,h);
+  const d=tx.getImageData(0,0,cw,ch).data,cells=[];
+  for(let r=0;r<rows;r++)for(let k=0;k<cols;k++){let R=0,G=0,B=0;for(let y=0;y<S;y++)for(let z=0;z<S;z++){const i=((r*S+y)*cw+k*S+z)*4;R+=d[i];G+=d[i+1];B+=d[i+2]}const n=S*S;cells.push([R/n,G/n,B/n])}
+  const lum=p=>.299*p[0]+.587*p[1]+.114*p[2],cl=v=>Math.max(0,Math.min(255,Math.round(v)));
+  cells.forEach(p=>{const g=lum(p);for(let i=0;i<3;i++)p[i]=g+(p[i]-g)*PUNCH.sat});
+  const m=cells.reduce((a,p)=>a+lum(p),0)/cells.length;
+  const W=600,cell=W/cols,c=document.createElement('canvas');c.width=W;c.height=Math.round(cell*rows);const x=c.getContext('2d');
+  cells.forEach((p,i)=>{const r=Math.floor(i/cols),k=i%cols;x.fillStyle='rgb('+cl(m+(p[0]-m)*PUNCH.contrast)+','+cl(m+(p[1]-m)*PUNCH.contrast)+','+cl(m+(p[2]-m)*PUNCH.contrast)+')';x.fillRect(Math.floor(k*cell),Math.floor(r*cell),Math.ceil(cell)+1,Math.ceil(cell)+1)});
+  c.toBlob(b=>b?res(b):rej(new Error('Immagine non valida')),'image/jpeg',.9)};img.onerror=()=>rej(new Error('Immagine non valida'));img.src=URL.createObjectURL(file)})}
+fab.onclick=()=>openForm();
+
+/* ---------- avvio ---------- */
+let sb=null;
+async function load(){
+  const {data,error}=await sb.from('items').select('*').order('created_at',{ascending:false});
+  if(error){fail='Errore di caricamento: '+error.message}
+  else{fail='';loaded=true;items=data.map(r=>({id:r.id,kind:r.kind,title:r.title,by:r.author,genre:r.genre,year:r.year,score:r.score,review:r.review,colors:r.colors,cover:r.cover,created:r.created_at}))}
+  route();
+}
+function foot(){
+  const f=document.getElementById('foot');
+  f.innerHTML=canEdit?'<a href="#" id="lo">Esci</a>':'<a href="#" id="li">Area riservata</a>';
+  const b=f.firstChild;b.onclick=async e=>{e.preventDefault();if(canEdit)await sb.auth.signOut();else openLogin()};
+}
+function showProblem(msg){fail=msg;try{route()}catch(e){app.textContent=msg}}
+function cfgProblem(){
+  if(typeof SUPABASE_URL==='undefined'||typeof SUPABASE_KEY==='undefined')return 'Il file config.js non è stato trovato o contiene un errore. Controlla che sia nel repository e che le due righe siano scritte come nell’originale, con gli apici.';
+  if(String(SUPABASE_URL).startsWith('INCOLLA')||String(SUPABASE_KEY).startsWith('INCOLLA'))return 'In config.js ci sono ancora le scritte INCOLLA_QUI: sostituiscile con i dati di Supabase.';
+  if(!/^https:\/\//.test(String(SUPABASE_URL).trim()))return 'Il Project URL in config.js deve iniziare con https:// ed essere del tipo https://abcdefgh.supabase.co';
+  if(typeof supabase==='undefined')return 'La libreria di Supabase non si è caricata (connessione assente o bloccata). Ricarica la pagina.';
+  return '';
+}
+function openLogin(){
+  sheet.hidden=false;
+  sheet.innerHTML=`<div class="fwrap"><h2>Area riservata</h2><label>Email</label><input id="l-mail" type="email" autocomplete="username"><label>Password</label><input id="l-pass" type="password" autocomplete="current-password"><div class="err" id="l-err">${esc(sb?'':cfgProblem())}</div><div class="acts"><button class="btn p" id="l-go">Accedi</button><button class="btn" id="l-no">Annulla</button></div></div>`;
+  const $=id=>document.getElementById(id);
+  $('l-no').onclick=()=>{sheet.hidden=true;sheet.innerHTML=''};
+  const go=async()=>{
+    const err=$('l-err'),btn=$('l-go');err.textContent='';
+    if(!sb){err.textContent=cfgProblem()||'Non sono riuscito a collegarmi a Supabase. Ricarica la pagina e riprova.';return}
+    btn.disabled=true;btn.textContent='Accedo…';
+    try{
+      const r=await sb.auth.signInWithPassword({email:$('l-mail').value.trim(),password:$('l-pass').value});
+      if(r.error){err.textContent='Accesso non riuscito: '+r.error.message}else{sheet.hidden=true;sheet.innerHTML=''}
+    }catch(e){err.textContent='Errore: '+(e.message||e)}
+    btn.disabled=false;btn.textContent='Accedi';
+  };
+  $('l-go').onclick=go;$('l-pass').onkeydown=e=>{if(e.key==='Enter')go()};
+}
+(async()=>{
+  foot();
+  const pr=cfgProblem();
+  if(pr){showProblem(pr);return}
+  try{
+    sb=supabase.createClient(String(SUPABASE_URL).trim().replace(/\/$/,''),String(SUPABASE_KEY).trim());
+    const s=await sb.auth.getSession();canEdit=!!s.data.session;
+    sb.auth.onAuthStateChange((_e,ses)=>{canEdit=!!ses;foot();route()});
+    foot();await load();
+    if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }catch(e){showProblem('Errore di avvio: '+(e.message||e))}
+})();
+</script>
+</body>
+</html>
